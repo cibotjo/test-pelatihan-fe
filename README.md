@@ -1,29 +1,49 @@
-# hc-bssn-ws-web
+# Frontend - Workshop Secure Coding Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend aplikasi ini dibuat dengan **Vue 3 + Vite + TailwindCSS** dan sengaja tidak dibuat sempurna agar dapat
+digunakan sebagai bahan latihan pada workshop secure coding frontend.
 
-## Recommended IDE Setup
+---
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## **1. Prasyarat**
 
-## Customize configuration
+* Node.js >= 18
+* NPM >= 8
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+---
 
-## Project Setup
+## **2. Setup Project**
 
-```sh
+### **Install Dependencies**
+
+```bash
+cd frontend
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+### **Jalankan dalam Mode Development**
 
-```sh
+```bash
 npm run dev
 ```
 
-### Compile and Minify for Production
+Akses aplikasi di: `http://localhost:5173`
 
-```sh
+### **Build untuk Production (tidak digunakan di workshop)**
+
+```bash
 npm run build
 ```
+
+---
+
+## **3. Catatan**
+
+* Aplikasi ini dibuat **hanya untuk tujuan pembelajaran** dan **tidak boleh** digunakan di lingkungan produksi.
+* Dalam workshop, peserta akan **menganalisis, menemukan, dan memperbaiki kelemahan** yang ada pada aplikasi ini.
+
+---
+
+## **4. Lisensi**
+
+Hak cipta © 2025 — Digunakan hanya untuk kepentingan workshop internal.
