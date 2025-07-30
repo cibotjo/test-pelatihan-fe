@@ -5,8 +5,8 @@ import Dashboard from './pages/Dashboard.vue'
 import ArrivalDetail from './pages/ArrivalDetail.vue'
 
 const routes = [
-    {path: '/', component: Login},
-    {path: '/form', component: ArrivalForm},
+    {path: '/', component: ArrivalForm},
+    {path: '/login', component: Login},
     {path: '/dashboard', component: Dashboard},
     {path: '/arrival/:id', component: ArrivalDetail},
 ]

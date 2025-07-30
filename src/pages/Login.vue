@@ -15,7 +15,6 @@
         </p>
       </div>
 
-      <!-- Form dengan bug: tidak ada validasi & error raw -->
       <form @submit.prevent="login" class="space-y-6">
         <div>
           <label for="email" class="block text-gray-700 font-medium mb-2">
@@ -51,7 +50,6 @@
         </button>
       </form>
 
-      <!-- Bug: tampilkan error raw -->
       <div v-if="error" class="mt-4 text-red-500 text-sm">
         <pre>{{ error }}</pre>
       </div>
@@ -83,13 +81,11 @@ export default {
           password: this.password,
         });
 
-        // BUG: simpan token di localStorage (seharusnya HttpOnly cookie)
         localStorage.setItem("token", res.data.token);
-        console.log("Token:", res.data.token); // BUG: sensitive log
+        console.log("Token:", res.data.token);
 
         this.$router.push("/dashboard");
       } catch (err) {
-        // BUG: tampilkan error raw
         this.error = err.response ? err.response.data : err.message;
       }
     },
