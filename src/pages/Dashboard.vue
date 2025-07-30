@@ -22,7 +22,7 @@
             <span class="material-icons ml-2">expand_more</span>
           </button>
           <div v-show="menuOpen" class="absolute right-0 mt-2 w-48 bg-white rounded shadow-lg z-20">
-            <router-link to="/" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Login</router-link>
+            <router-link to="/" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</router-link>
           </div>
         </div>
       </header>
@@ -76,7 +76,7 @@
                     :class="statusColor(arrival.status)">{{ arrival.status }}
                 </td>
                 <td class="p-3 border-b">
-                  <button @click="openModal(arrival)" class="text-blue-600 hover:underline">Detail</button>
+                  <router-link :to="`/arrivals/${arrival.id}`" class="text-blue-600 hover:underline">Detail</router-link>
                 </td>
               </tr>
               </tbody>

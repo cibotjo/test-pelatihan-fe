@@ -78,7 +78,7 @@ export default {
     async rejectArrival() {
       try {
         const res = await axios.post(
-            `http://localhost:3000/api/arrivals/${this.arrival.id}/reject`,
+            `http://localhost:3000/api/arrival/${this.arrival.id}/reject`,
             {},
             {
               headers: {
