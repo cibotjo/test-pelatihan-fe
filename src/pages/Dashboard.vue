@@ -114,6 +114,7 @@ export default {
     return {
       arrivals: [],
       modalOpen: false,
+      selectedArrival: null,
       selectedArrivalHtml: "",
       menuOpen: false
     };
@@ -132,16 +133,15 @@ export default {
   methods: {
     async fetchArrivals() {
       try {
-        // BUG: hardcoded endpoint & no auth
-        const res = await axios.get("http://localhost:3000/api/arrival");
-        console.log("Arrivals:", res.data); // BUG: sensitive log
-        this.arrivals = res.data;
+        const res = await axios.get("http://localhost:3000/api/arrivals");
+        console.log("Arrivals:", res.data);
+        this.arrivals = res.data.data;
       } catch (err) {
         alert("Error: " + (err.response?.data || err.message));
       }
     },
     openModal(arrival) {
-      // BUG: raw HTML string (XSS risk)
+      this.selectedArrival = arrival;
       this.selectedArrivalHtml = `
         <p><b>Nama:</b> ${arrival.full_name}</p>
         <p><b>Paspor:</b> ${arrival.passport_no}</p>
@@ -154,14 +154,44 @@ export default {
     closeModal() {
       this.modalOpen = false;
     },
-    approveArrival() {
-      // BUG: tidak cek role
-      alert("Kedatangan disetujui (dummy)");
+    async approveArrival() {
+      try {
+        const res = await axios.post(
+            `http://localhost:3000/api/arrivals/${this.selectedArrival.id}/approve`,
+            {},
+            {
+              headers: {
+                "Content-Type": "application/json"
+              }
+            }
+        );
+        console.log("Approve response:", res.data);
+        await this.fetchArrivals();
+      } catch (err) {
+        console.log(err);
+        alert("Error approving arrival: " + (err.response?.data?.message || err.message));
+      }
+
       this.closeModal();
     },
-    rejectArrival() {
-      // BUG: tidak cek role
-      alert("Kedatangan ditolak (dummy)");
+    async rejectArrival() {
+      try {
+        const res = await axios.post(
+            `http://localhost:3000/api/arrivals/${this.selectedArrival.id}/reject`,
+            {},
+            {
+              headers: {
+                "Content-Type": "application/json"
+              }
+            }
+        );
+        console.log("Reject response:", res.data);
+        await this.fetchArrivals();
+      } catch (err) {
+        console.log(err);
+        alert("Error reject arrival: " + (err.response?.data?.message || err.message));
+      }
+
       this.closeModal();
     },
     statusColor(status) {

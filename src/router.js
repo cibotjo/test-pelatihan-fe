@@ -8,7 +8,7 @@ const routes = [
     {path: '/', component: ArrivalForm},
     {path: '/login', component: Login},
     {path: '/dashboard', component: Dashboard},
-    {path: '/arrival/:id', component: ArrivalDetail},
+    {path: '/arrivals/:id', component: ArrivalDetail},
 ]
 
 const router = createRouter({
