@@ -22,7 +22,7 @@
             <span class="material-icons ml-2">expand_more</span>
           </button>
           <div v-show="menuOpen" class="absolute right-0 mt-2 w-48 bg-white rounded shadow-lg z-20">
-            <router-link to="/" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</router-link>
+            <a href="#" @click.prevent="logout" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Logout</a>
           </div>
         </div>
       </header>
@@ -76,7 +76,20 @@
                     :class="statusColor(arrival.status)">{{ arrival.status }}
                 </td>
                 <td class="p-3 border-b">
-                  <router-link :to="`/arrivals/${arrival.id}`" class="text-blue-600 hover:underline">Detail</router-link>
+                  <router-link 
+                    v-if="arrival.status !== 'approved' && arrival.status !== 'rejected'" 
+                    :to="`/arrivals/${arrival.id}`" 
+                    class="text-blue-600 hover:underline"
+                  >
+                    Detail
+                  </router-link>
+                  <span 
+                    v-else 
+                    class="text-gray-400 cursor-not-allowed"
+                    title="Kedatangan ini sudah diputuskan"
+                  >
+                    Detail
+                  </span>
                 </td>
               </tr>
               </tbody>
@@ -92,13 +105,21 @@
         <h3 class="text-xl font-semibold mb-4">Detail Kedatangan</h3>
 
         <div class="space-y-2" v-html="selectedArrivalHtml"></div>
-        <div class="mt-6 flex space-x-4">
-          <button class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded hidden md:block"
-                  @click="approveArrival">Approve
-          </button>
-          <button class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded hidden md:block"
-                  @click="rejectArrival">Reject
-          </button>
+        <div v-if="selectedArrival && selectedArrival.status !== 'approved' && selectedArrival.status !== 'rejected'" class="mt-6">
+          <div v-if="isAdmin" class="flex space-x-4">
+            <button class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded"
+                    @click="approveArrival">Approve
+            </button>
+            <button class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded"
+                    @click="rejectArrival">Reject
+            </button>
+          </div>
+          <div v-else class="bg-gray-100 p-4 rounded text-center text-gray-600">
+            Anda login sebagai staff. Hanya admin yang dapat melakukan approval atau rejection.
+          </div>
+        </div>
+        <div v-else-if="selectedArrival" class="mt-6 bg-gray-100 p-4 rounded text-center text-gray-600">
+          Kedatangan ini sudah {{ selectedArrival.status === 'approved' ? 'disetujui' : 'ditolak' }} dan tidak dapat diubah.
         </div>
       </div>
     </div>
@@ -106,7 +127,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../services/api";
 
 export default {
   name: "Dashboard",
@@ -116,7 +137,10 @@ export default {
       modalOpen: false,
       selectedArrival: null,
       selectedArrivalHtml: "",
-      menuOpen: false
+      menuOpen: false,
+      isAdmin: false, //cek admin
+      userRole: null,
+      userName: null
     };
   },
   computed: {
@@ -129,11 +153,12 @@ export default {
   },
   mounted() {
     this.fetchArrivals();
+    this.checkUserRole(); //cek role
   },
   methods: {
     async fetchArrivals() {
       try {
-        const res = await axios.get("http://localhost:3000/api/arrivals");
+        const res = await api.get("/arrivals");
         console.log("Arrivals:", res.data);
         this.arrivals = res.data.data;
       } catch (err) {
@@ -156,40 +181,60 @@ export default {
     },
     async approveArrival() {
       try {
-        const res = await axios.post(
-            `http://localhost:3000/api/arrivals/${this.selectedArrival.id}/approve`,
-            {},
-            {
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
+        const res = await api.post(
+            `/arrivals/${this.selectedArrival.id}/approve`,
+            {}
         );
         console.log("Approve response:", res.data);
         await this.fetchArrivals();
+        alert("Kedatangan berhasil disetujui!");
       } catch (err) {
         console.log(err);
-        alert("Error approving arrival: " + (err.response?.data?.message || err.message));
+        
+        // Tampilkan pesan yang lebih informatif untuk error 403
+        if (err.response?.status === 403) {
+          const data = err.response.data;
+          let errorMessage = data.message || 'Anda tidak memiliki hak akses untuk melakukan approval.';
+          
+          // Tambahkan informasi tambahan jika tersedia
+          if (data.userName && data.userRole) {
+            errorMessage += `\nAnda login sebagai ${data.userName} dengan peran ${data.userRole}.`;
+          }
+          
+          alert(errorMessage);
+        } else {
+          alert("Error approving arrival: " + (err.response?.data?.message || err.message));
+        }
       }
 
       this.closeModal();
     },
     async rejectArrival() {
       try {
-        const res = await axios.post(
-            `http://localhost:3000/api/arrivals/${this.selectedArrival.id}/reject`,
-            {},
-            {
-              headers: {
-                "Content-Type": "application/json"
-              }
-            }
+        const res = await api.post(
+            `/arrivals/${this.selectedArrival.id}/reject`,
+            {}
         );
         console.log("Reject response:", res.data);
         await this.fetchArrivals();
+        alert("Kedatangan berhasil ditolak!");
       } catch (err) {
         console.log(err);
-        alert("Error reject arrival: " + (err.response?.data?.message || err.message));
+        
+        // Tampilkan pesan yang lebih informatif untuk error 403
+        if (err.response?.status === 403) {
+          const data = err.response.data;
+          let errorMessage = data.message || 'Anda tidak memiliki hak akses untuk melakukan rejection.';
+          
+          // Tambahkan informasi tambahan jika tersedia
+          if (data.userName && data.userRole) {
+            errorMessage += `\nAnda login sebagai ${data.userName} dengan peran ${data.userRole}.`;
+          }
+          
+          alert(errorMessage);
+        } else {
+          alert("Error reject arrival: " + (err.response?.data?.message || err.message));
+        }
       }
 
       this.closeModal();
@@ -201,7 +246,52 @@ export default {
     },
     toggleMenu() {
       this.menuOpen = !this.menuOpen;
+    },
+    async logout() { 
+      try { 
+        // Hapus status login dari localStorage 
+        localStorage.removeItem('isLoggedIn'); 
+        
+        // Redirect ke halaman login 
+        this.$router.push('/login'); 
+      } catch (error) { 
+        console.error('Logout error:', error); 
+      } 
+    },
+    
+    async checkUserRole() { //cek Role
+      try {
+        // Coba melakukan operasi yang memerlukan hak admin
+        // Kita akan menggunakan ID yang tidak ada untuk menghindari perubahan data
+        await api.post('/arrivals/999999/approve', {});
+        // Jika berhasil, berarti pengguna adalah admin
+        this.isAdmin = true;
+        this.userRole = 'admin';
+      } catch (err) {
+        if (err.response?.status === 403) {
+          // Jika mendapat error 403, berarti pengguna bukan admin
+          this.isAdmin = false;
+          
+          // Ambil informasi pengguna dari respons error
+          const data = err.response.data;
+          if (data.userRole) {
+            this.userRole = data.userRole;
+          }
+          if (data.userName) {
+            this.userName = data.userName;
+          }
+        } else if (err.response?.status === 404) {
+          // Jika mendapat error 404, berarti endpoint valid tapi ID tidak ditemukan
+          // Ini menunjukkan pengguna adalah admin
+          this.isAdmin = true;
+          this.userRole = 'admin';
+        }
+        // Jangan tampilkan error untuk operasi ini
+        console.log('User role check completed');
+      }
     }
   }
 };
 </script>
+
+

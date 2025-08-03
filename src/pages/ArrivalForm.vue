@@ -92,12 +92,13 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "../services/api";
 
 export default {
   name: "ArrivalForm",
   data() {
     return {
+      isSubmitting: false,
       form: {
         full_name: "",
         passport_no: "",
@@ -121,16 +122,150 @@ export default {
   },
   methods: {
     handleFileUpload(field, event) {
-      this.form[field] = URL.createObjectURL(event.target.files[0]);
+      const file = event.target.files[0];
+      if (file) {
+        // Validasi tipe file
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+        if (!allowedTypes.includes(file.type)) {
+          alert('Tipe file tidak diizinkan. Gunakan format JPG, PNG, atau PDF.');
+          // Reset input file
+          event.target.value = '';
+          return;
+        }
+        
+        // Validasi ukuran file (maksimal 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert('Ukuran file terlalu besar. Maksimal 5MB.');
+          // Reset input file
+          event.target.value = '';
+          return;
+        }
+        
+        this.form[field] = file; // Simpan objek file, bukan URL
+      }
     },
     async submitForm() {
+      // Cegah multiple submission
+      if (this.isSubmitting) return;
+      this.isSubmitting = true;
       try {
-        const res = await axios.post("http://localhost:3000/api/arrival", this.form);
+        // Validasi input sebelum mengirim
+        const requiredFields = ['full_name', 'passport_no', 'nationality', 'gender', 'birth_date', 'phone_number', 'email'];
+        const missingFields = requiredFields.filter(field => !this.form[field]);
+        
+        if (missingFields.length > 0) {
+          alert('Mohon lengkapi data berikut: ' + missingFields.join(', '));
+          this.isSubmitting = false;
+          return;
+        }
+        
+        // Validasi format email
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(this.form.email)) {
+          alert('Format email tidak valid');
+          this.isSubmitting = false;
+          return;
+        }
+        
+        // Validasi format nomor telepon (hanya angka dan +)
+        const phoneRegex = /^[+]?[0-9]+$/;
+        if (!phoneRegex.test(this.form.phone_number)) {
+          alert('Format nomor telepon tidak valid');
+          this.isSubmitting = false;
+          return;
+        }
+        
+        // Validasi nomor paspor (alfanumerik)
+        const passportRegex = /^[A-Z0-9]+$/i;
+        if (!passportRegex.test(this.form.passport_no)) {
+          alert('Format nomor paspor tidak valid');
+          this.isSubmitting = false;
+          return;
+        }
+        
+        // Persiapkan FormData untuk upload file
+        const formData = new FormData();
+        
+        // Sanitasi dan tambahkan semua field teks ke FormData
+        Object.keys(this.form).forEach(key => {
+          if (key !== 'face_photo_url' && key !== 'vaccine_card_url') {
+            // Sanitasi input untuk mencegah XSS
+            let value = this.form[key];
+            formData.append(key, value);
+          }
+        });
+        
+        // Tambahkan file jika ada
+        if (this.form.face_photo_url instanceof File) {
+          formData.append('face_photo', this.form.face_photo_url);
+        }
+        
+        if (this.form.vaccine_card_url instanceof File) {
+          formData.append('vaccine_card', this.form.vaccine_card_url);
+        }
+        
+        // Tambahkan timestamp untuk mencegah replay attack
+        formData.append('timestamp', Date.now());
+        
+        // Kirim data dengan CSRF token jika tersedia
+        const res = await api.post(`/arrivals`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'X-Requested-With': 'XMLHttpRequest' // Untuk identifikasi AJAX request
+          },
+          withCredentials: true // Untuk mengirim cookies (termasuk CSRF token)
+        });
+        
         console.log("Response:", res.data);
         alert("Data berhasil dikirim");
+        
+        // Reset form setelah berhasil
+        this.resetForm();
       } catch (err) {
-        alert("Error: " + (err.response?.data || err.message));
+        console.error("Error submitting form:", err);
+        
+        // Tampilkan pesan error yang lebih spesifik berdasarkan jenis error
+        let errorMessage = "Terjadi kesalahan saat mengirim data. Silakan coba lagi.";
+        
+        if (err.response) {
+          // Error dari server
+          if (err.response.status === 500) {
+            errorMessage = "Terjadi kesalahan pada server. Kemungkinan masalah pada direktori uploads. Silakan hubungi administrator.";
+          } else if (err.response.status === 413) {
+            errorMessage = "Ukuran file terlalu besar. Silakan kompres file Anda atau gunakan file yang lebih kecil.";
+          } else if (err.response.status === 400) {
+            errorMessage = "Data yang dikirim tidak valid. Silakan periksa kembali formulir Anda.";
+          } else if (err.response.status === 401 || err.response.status === 403) {
+            errorMessage = "Anda tidak memiliki izin untuk melakukan operasi ini. Silakan login kembali.";
+          }
+          
+          // Jika server mengirimkan pesan error spesifik, gunakan itu
+          if (err.response.data && err.response.data.message) {
+            errorMessage = err.response.data.message;
+          }
+        } else if (err.request) {
+          // Tidak ada respons dari server
+          errorMessage = "Tidak dapat terhubung ke server. Periksa koneksi internet Anda dan coba lagi.";
+        }
+        
+        alert(errorMessage);
+      } finally {
+        // Pastikan isSubmitting diatur kembali ke false
+        this.isSubmitting = false;
       }
+    },
+
+    resetForm() {
+      // Reset semua field form
+      Object.keys(this.form).forEach(key => {
+        this.form[key] = "";
+      });
+      
+      // Reset file input fields
+      const fileInputs = document.querySelectorAll('input[type="file"]');
+      fileInputs.forEach(input => {
+        input.value = '';
+      });
     }
   }
 };

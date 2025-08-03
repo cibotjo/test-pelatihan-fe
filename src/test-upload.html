@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Upload Arrival Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+      white-space: pre-wrap;
+    }
+    .error {
+      color: #e74c3c;
+    }
+    .success {
+      color: #27ae60;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test Upload Arrival Data</h1>
+  
+  <div class="form-group">
+    <label for="face-photo">Foto Wajah:</label>
+    <input type="file" id="face-photo" accept="image/jpeg,image/png,image/jpg">
+  </div>
+  
+  <div class="form-group">
+    <label for="vaccine-card">Kartu Vaksin:</label>
+    <input type="file" id="vaccine-card" accept="image/jpeg,image/png,image/jpg,application/pdf">
+  </div>
+  
+  <button id="test-upload">Test Upload</button>
+  
+  <div class="result" id="result">Hasil akan ditampilkan di sini...</div>
+  
+  <script type="module">
+    import { testUploadFromJs, getSampleArrivalData } from './services/arrivalService.js';
+    
+    document.getElementById('test-upload').addEventListener('click', async () => {
+      const resultElement = document.getElementById('result');
+      resultElement.textContent = 'Mengirim data...';
+      resultElement.className = 'result';
+      
+      try {
+        // Mendapatkan file dari input element
+        const facePhotoInput = document.getElementById('face-photo');
+        const vaccineCardInput = document.getElementById('vaccine-card');
+        
+        // Mendapatkan data sample
+        const formData = getSampleArrivalData();
+        
+        // Melakukan test upload
+        const result = await testUploadFromJs(
+          formData,
+          facePhotoInput.files[0] || null,
+          vaccineCardInput.files[0] || null
+        );
+        
+        // Menampilkan hasil
+        if (result.success) {
+          resultElement.textContent = 'Upload berhasil!\n\n' + JSON.stringify(result.data, null, 2);
+          resultElement.className = 'result success';
+        } else {
+          resultElement.textContent = 'Upload gagal!\n\n' + JSON.stringify(result.errors, null, 2);
+          resultElement.className = 'result error';
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        resultElement.textContent = 'Terjadi kesalahan: ' + error.message;
+        resultElement.className = 'result error';
+      }
+    });
+  </script>
+</body>
+</html>
