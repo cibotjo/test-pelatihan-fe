@@ -69,7 +69,7 @@
               <tbody>
               <tr v-for="arrival in arrivals" :key="arrival.id" class="hover:bg-gray-50">
                 <td class="p-3 border-b" v-html="arrival.full_name"></td>
-                <td class="p-3 border-b">{{ arrival.passport_no }}</td>
+                <td class="p-3 border-b">{{ maskPassport(arrival.passport_no) }}</td>
                 <td class="p-3 border-b">{{ arrival.nationality }}</td>
                 <td class="p-3 border-b">{{ arrival.arrival_datetime }}</td>
                 <td class="p-3 border-b font-semibold"
@@ -165,11 +165,19 @@ export default {
         alert("Error: " + (err.response?.data || err.message));
       }
     },
+    // Fungsi untuk menyembunyikan sebagian nomor paspor
+    maskPassport(passport) {
+      if (!passport) return '';
+      // Tampilkan 3 karakter pertama, sisanya ganti dengan bintang
+      const visibleChars = 3;
+      const maskedPart = '*'.repeat(passport.length - visibleChars);
+      return passport.substring(0, visibleChars) + maskedPart;
+    },
     openModal(arrival) {
       this.selectedArrival = arrival;
       this.selectedArrivalHtml = `
         <p><b>Nama:</b> ${arrival.full_name}</p>
-        <p><b>Paspor:</b> ${arrival.passport_no}</p>
+        <p><b>Paspor:</b> ${this.maskPassport(arrival.passport_no)}</p>
         <p><b>Kebangsaan:</b> ${arrival.nationality}</p>
         <p><b>Tanggal Kedatangan:</b> ${arrival.arrival_datetime}</p>
         <p><b>Alamat Tinggal:</b> ${arrival.address_in_indonesia}</p>
